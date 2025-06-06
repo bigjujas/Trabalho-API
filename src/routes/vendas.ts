@@ -39,6 +39,7 @@ router.post('/', async (req: Request, res: Response) => {
       });
     });
 
+
     // Buscar dados completos para o e-mail
     const usuario = await prisma.usuario.findUnique({ where: { id: clienteId } });
     const festa = await prisma.festa.findUnique({ where: { id: festaId } });
@@ -82,5 +83,54 @@ router.get('/:id', async (req: Request, res: Response) => {
   if (!venda) return res.status(404).json({ error: 'Venda não encontrada' });
   res.json(venda);
 });
+
+// Cancelar venda e reverter transação
+router.delete('/:id', async (req: Request, res: Response) => {
+  const vendaId = Number(req.params.id);
+
+  try {
+    const resultado = await prisma.$transaction(async (tx) => {
+      // Busca a venda com dados relacionados
+      const venda = await tx.venda.findUnique({
+        where: { id: vendaId },
+        include: { cliente: true, festa: true }
+      });
+
+      if (!venda) throw new Error('Venda não encontrada');
+
+      // Reverte ingressos na festa
+      await tx.festa.update({
+        where: { id: venda.festaId },
+        data: {
+          ingressosDisponiveis: {
+            increment: venda.quantidade
+          }
+        }
+      });
+
+      // Reverte carteira de ingressos do usuário
+      await tx.usuario.update({
+        where: { id: venda.clienteId },
+        data: {
+          carteiraIngressos: {
+            decrement: venda.quantidade
+          }
+        }
+      });
+
+      // Deleta a venda
+      await tx.venda.delete({
+        where: { id: vendaId }
+      });
+
+      return venda;
+    });
+
+    res.json({ message: 'Venda cancelada e reversão concluída.', vendaCancelada: resultado });
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 
 export default router; 
