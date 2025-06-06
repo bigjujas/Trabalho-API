@@ -1,6 +1,12 @@
+![Excalidraw](https://raw.githubusercontent.com/bigjujas/Trabalho-API/refs/heads/main/blueprint.png)
+
 # Venda de Ingressos API
 
 API para venda de ingressos usando Node.js, TypeScript, Express e Prisma.
+
+Prisma com SQLite para o armazenamento de dados.
+
+Nodemailer com Ethereal para envio de emails automáticos.
 
 ## Como rodar
 
@@ -39,5 +45,6 @@ Cria uma venda de ingressos, atualizando as tabelas de usuários e festas.
   "festaId": 1,
   "quantidade": 2,
   "valor": 100.0
+  "emailUrl": "https://ethereal.email/message/XXXXXXXXXXXX"
 }
 ``` 
