@@ -1,5 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { prisma } from '../prisma/client';
+import { authMiddleware } from '../utils/auth';
 
 const router = Router();
 
@@ -16,19 +17,31 @@ router.get('/:id', async (req: Request, res: Response) => {
   res.json(festa);
 });
 
-// Criar festa
-router.post('/', async (req: Request, res: Response) => {
+// Criar festa (requer autenticação)
+router.post('/', authMiddleware, async (req: Request, res: Response) => {
   const { nome, valor, ingressos, ingressosDisponiveis } = req.body;
+  
+  if (!nome || !valor || !ingressos) {
+    return res.status(400).json({ error: 'Nome, valor e quantidade de ingressos são obrigatórios' });
+  }
+  
   try {
-    const festa = await prisma.festa.create({ data: { nome, valor, ingressos, ingressosDisponiveis } });
+    const festa = await prisma.festa.create({ 
+      data: { 
+        nome, 
+        valor, 
+        ingressos, 
+        ingressosDisponiveis: ingressosDisponiveis || ingressos 
+      } 
+    });
     res.status(201).json(festa);
   } catch (error: any) {
     res.status(400).json({ error: error.message });
   }
 });
 
-// Atualizar festa
-router.put('/:id', async (req: Request, res: Response) => {
+// Atualizar festa (requer autenticação)
+router.put('/:id', authMiddleware, async (req: Request, res: Response) => {
   const { nome, valor, ingressos, ingressosDisponiveis } = req.body;
   try {
     const festa = await prisma.festa.update({
@@ -41,8 +54,8 @@ router.put('/:id', async (req: Request, res: Response) => {
   }
 });
 
-// Deletar festa
-router.delete('/:id', async (req: Request, res: Response) => {
+// Deletar festa (requer autenticação)
+router.delete('/:id', authMiddleware, async (req: Request, res: Response) => {
   try {
     await prisma.festa.delete({ where: { id: Number(req.params.id) } });
     res.status(204).send();
